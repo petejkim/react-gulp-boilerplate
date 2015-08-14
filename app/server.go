@@ -35,11 +35,7 @@ func init() {
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8000"
-	}
-
-	if appEnv == "development" {
-		http.HandleFunc("/api/", proxyAPI)
+		port = "4000"
 	}
 
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(filepath.Join(__dirname, "assets")))))
@@ -84,9 +80,6 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(indexTmplCached.Bytes())
-}
-
-func proxyAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func dirname() string {

@@ -10,6 +10,7 @@ var gulp = require('gulp'),
     uglify = require('gulp-uglify'),
     sass = require('gulp-sass'),
     sourcemaps = require('gulp-sourcemaps'),
+    shell = require('gulp-shell'),
     gutil = require('gulp-util'),
     chalk = require('chalk'),
     del = require('del');
@@ -17,9 +18,9 @@ var gulp = require('gulp'),
 var appJS = 'app/assets/js/app.js',
     appCSS = 'app/assets/css/app.sass';
 
-gulp.task('default', ['clean-dev', 'js-dev', 'css-dev']);
+gulp.task('default', ['clean-dev', 'js-dev', 'css-dev', 'templates-dev', 'server-dev']);
 
-gulp.task('dist', ['clean-dist', 'js-dist', 'css-dist']);
+gulp.task('dist', ['clean-dist', 'js-dist', 'css-dist', 'templates-dist', 'server-dist']);
 
 gulp.task('clean', function(cb) {
   del(['build/**', '!build'], cb);
@@ -31,6 +32,24 @@ gulp.task('clean-dev', function(cb) {
 
 gulp.task('clean-dist', function(cb) {
   del(['build/dist/**', '!build/dist'], cb);
+});
+
+gulp.task('server-dev', function() {
+  var dest = 'build/dev/server';
+  del.sync([dest]);
+  process.env.APP_ENV = 'development';
+  buildServer(dest, true);
+});
+
+gulp.task('templates-dev', function() {
+  var dest = 'build/dev/templates';
+  del.sync([dest]);
+
+  copyTemplates(dest);
+  gulp.watch('app/templates/**/*.tmpl').on('change', function() {
+    gutil.log('Copying Templates...');
+    copyTemplates(dest);
+  });
 });
 
 gulp.task('js-dev', function() {
@@ -74,6 +93,18 @@ gulp.task('css-dev', function() {
   });
 });
 
+gulp.task('server-dist', function() {
+  var dest = 'build/dist/server';
+  del.sync([dest]);
+  return buildServer(dest, false);
+});
+
+gulp.task('templates-dist', function() {
+  var dest = 'build/dist/templates';
+  del.sync([dest]);
+  return copyTemplates(dest);
+});
+
 gulp.task('js-dist', function() {
   var dest = 'build/dist/assets/js';
 
@@ -98,6 +129,25 @@ gulp.task('css-dist', function() {
     compress: true
   });
 });
+
+function buildServer(dest, run) {
+  dest = dest || 'build/dev/server';
+
+  var cmds = ['go build -o <%= dest %> <%= file.path %>'];
+  if (run) {
+    cmds.push('<%= dest %>')
+  }
+
+  gulp.src('app/server.go', { read: false })
+    .pipe(shell(cmds, { templateData: { dest: dest } }));
+}
+
+function copyTemplates(dest) {
+  dest = dest || 'build/dev/templates';
+
+  return gulp.src('app/templates/**/*.tmpl')
+    .pipe(gulp.dest(dest));
+}
 
 function buildJS(options) {
   options = merge({
