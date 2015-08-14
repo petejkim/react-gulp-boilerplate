@@ -14,23 +14,27 @@ var gulp = require('gulp'),
     chalk = require('chalk'),
     del = require('del');
 
-var appJS = 'app/js/app.js',
-    appCSS = 'app/css/app.sass';
+var appJS = 'app/assets/js/app.js',
+    appCSS = 'app/assets/css/app.sass';
 
 gulp.task('default', ['clean-dev', 'js-dev', 'css-dev']);
 
 gulp.task('dist', ['clean-dist', 'js-dist', 'css-dist']);
 
+gulp.task('clean', function(cb) {
+  del(['build/**', '!build'], cb);
+})
+
 gulp.task('clean-dev', function(cb) {
-  del(['build/dev'], cb);
+  del(['build/dev/**', '!build/dev'], cb);
 });
 
 gulp.task('clean-dist', function(cb) {
-  del(['build/dist'], cb);
+  del(['build/dist/**', '!build/dist'], cb);
 });
 
 gulp.task('js-dev', function() {
-  var dest = 'build/dev/js';
+  var dest = 'build/dev/assets/js';
 
   del.sync([dest]);
 
@@ -52,7 +56,7 @@ gulp.task('js-dev', function() {
 });
 
 gulp.task('css-dev', function() {
-  var dest = 'build/dev/css';
+  var dest = 'build/dev/assets/css';
 
   del.sync([dest]);
 
@@ -64,14 +68,14 @@ gulp.task('css-dev', function() {
 
   buildCSS(cssOptions);
 
-  gulp.watch('app/css/**/*.sass').on('change', function() {
+  gulp.watch('app/assets/css/**/*.sass').on('change', function() {
     gutil.log('Building CSS...');
     buildCSS(cssOptions);
   });
 });
 
 gulp.task('js-dist', function() {
-  var dest = 'build/dist/js';
+  var dest = 'build/dist/assets/js';
 
   del.sync([dest]);
 
@@ -84,7 +88,7 @@ gulp.task('js-dist', function() {
 });
 
 gulp.task('css-dist', function() {
-  var dest = 'build/dist/css';
+  var dest = 'build/dist/assets/css';
 
   del.sync([dest]);
 
@@ -97,7 +101,7 @@ gulp.task('css-dist', function() {
 
 function buildJS(options) {
   options = merge({
-    dest: 'build/dev',
+    dest: 'build/assets/dev',
     sourcemaps: true,
     compress: false,
     bundler: null
@@ -112,8 +116,7 @@ function buildJS(options) {
     .pipe(buffer());
 
   if (options.compress) {
-    js = js.pipe(rename('app.min.js'))
-      .pipe(uglify());
+    js = js.pipe(uglify());
   }
 
   js.pipe(gulp.dest(options.dest));
@@ -129,7 +132,7 @@ function buildJS(options) {
 
 function buildCSS(options) {
   options = merge({
-    dest: 'build/dev',
+    dest: 'build/assets/dev',
     sourcemaps: true,
     compress: false
   }, options || {});
@@ -155,7 +158,7 @@ function mapError(err) {
   if (err.fileName) {
     // regular error
     gutil.log(chalk.red(err.name)
-      + ': ' + chalk.yellow(err.fileName.replace(__dirname + '/app/js/', ''))
+      + ': ' + chalk.yellow(err.fileName.replace(__dirname, ''))
       + ': ' + 'Line ' + chalk.magenta(err.lineNumber)
       + ' & Column ' + chalk.magenta(err.columnNumber || err.column)
       + ': ' + chalk.blue(err.description));
