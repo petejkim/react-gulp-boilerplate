@@ -3,10 +3,10 @@
 var gulp = require('gulp'),
     browserify = require('browserify'),
     watchify = require('watchify'),
+    coffeeify = require('coffeeify'),
     babelify = require('babelify'),
     source = require('vinyl-source-stream'),
     buffer = require('vinyl-buffer'),
-    rename = require('gulp-rename'),
     uglify = require('gulp-uglify'),
     sass = require('gulp-sass'),
     sourcemaps = require('gulp-sourcemaps'),
@@ -24,7 +24,7 @@ gulp.task('dist', ['clean-dist', 'js-dist', 'css-dist', 'templates-dist', 'serve
 
 gulp.task('clean', function(cb) {
   del(['build/**', '!build'], cb);
-})
+});
 
 gulp.task('clean-dev', function(cb) {
   del(['build/dev/**', '!build/dev'], cb);
@@ -57,18 +57,18 @@ gulp.task('js-dev', function() {
 
   del.sync([dest]);
 
-  var w = watchify(browserify(appJS, {debug: true}));
+  var b = browserifyBundler({debug: true});
 
   var jsOptions = {
     dest: dest,
     sourcemaps: true,
     compress: false,
-    bundler: w
+    bundler: b
   };
 
   buildJS(jsOptions);
 
-  w.on('update', function () {
+  watchify(b).on('update', function () {
     gutil.log('Building JS...');
     buildJS(jsOptions);
   });
@@ -135,7 +135,7 @@ function buildServer(dest, run) {
 
   var cmds = ['go build -o <%= dest %> <%= file.path %>'];
   if (run) {
-    cmds.push('<%= dest %>')
+    cmds.push('<%= dest %>');
   }
 
   gulp.src('app/server.go', { read: false })
@@ -149,6 +149,19 @@ function copyTemplates(dest) {
     .pipe(gulp.dest(dest));
 }
 
+function browserifyBundler(options) {
+  var jsExtensions = ['.js', '.jsx', '.es6', '.coffee'];
+
+  options = merge({
+    extensions: jsExtensions
+  }, options || {});
+
+  var bundler = browserify(appJS, options);
+  bundler.transform(coffeeify);
+  bundler.transform(babelify.configure({extensions: jsExtensions}));
+  return bundler;
+}
+
 function buildJS(options) {
   options = merge({
     dest: 'build/assets/dev',
@@ -157,10 +170,9 @@ function buildJS(options) {
     bundler: null
   }, options || {});
 
-  var js = options.bundler || browserify(appJS);
+  var js = options.bundler || browserifyBundler();
 
-  js = js.transform(babelify)
-    .bundle()
+  js = js.bundle()
     .on('error', mapError)
     .pipe(source('app.js'))
     .pipe(buffer());
