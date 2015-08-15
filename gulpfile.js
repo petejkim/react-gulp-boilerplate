@@ -57,7 +57,7 @@ gulp.task('js-dev', function() {
 
   del.sync([dest]);
 
-  var w = watchify(browserify(appJS));
+  var w = watchify(browserify(appJS, {debug: true}));
 
   var jsOptions = {
     dest: dest,
