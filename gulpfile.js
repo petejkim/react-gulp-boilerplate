@@ -1,5 +1,3 @@
-"use strict";
-
 var gulp = require('gulp'),
     browserify = require('browserify'),
     watchify = require('watchify'),
@@ -13,7 +11,8 @@ var gulp = require('gulp'),
     shell = require('gulp-shell'),
     gutil = require('gulp-util'),
     chalk = require('chalk'),
-    del = require('del');
+    del = require('del'),
+    path = require('path');
 
 var appJS = 'app/assets/js/app.js',
     appCSS = 'app/assets/css/app.sass';
@@ -47,8 +46,10 @@ gulp.task('templates-dev', function() {
 
   copyTemplates(dest);
   gulp.watch('app/templates/**/*.tmpl').on('change', function() {
-    gutil.log('Copying Templates...');
-    copyTemplates(dest);
+    gutil.log('Copying ' + chalk.cyan('templates') + '...');
+    copyTemplates(dest).on('end', function() {
+      gutil.log('Copied ' + chalk.cyan('templates'));
+    });
   });
 });
 
@@ -69,8 +70,10 @@ gulp.task('js-dev', function() {
   buildJS(jsOptions);
 
   watchify(b).on('update', function () {
-    gutil.log('Building JS...');
-    buildJS(jsOptions);
+    gutil.log('Building ' + chalk.cyan('JS') + '...');
+    buildJS(jsOptions).on('end', function() {
+      gutil.log('Built ' + chalk.cyan('JS'));
+    });
   });
 });
 
@@ -88,8 +91,10 @@ gulp.task('css-dev', function() {
   buildCSS(cssOptions);
 
   gulp.watch('app/assets/css/**/*.sass').on('change', function() {
-    gutil.log('Building CSS...');
-    buildCSS(cssOptions);
+    gutil.log('Building ' + chalk.cyan('CSS') + '...');
+    buildCSS(cssOptions).on('end', function() {
+      gutil.log('Built ' + chalk.cyan('CSS'));
+    });
   });
 });
 
@@ -150,10 +155,11 @@ function copyTemplates(dest) {
 }
 
 function browserifyBundler(options) {
-  var jsExtensions = ['.js', '.jsx', '.es6', '.coffee'];
+  var jsExtensions = ['.js', '.jsx', '.es6', '.coffee', '.json'];
 
   options = merge({
-    extensions: jsExtensions
+    extensions: jsExtensions,
+    paths: path.dirname(appJS)
   }, options || {});
 
   var bundler = browserify(appJS, options);
