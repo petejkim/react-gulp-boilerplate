@@ -10,6 +10,7 @@ var gulp = require('gulp'),
     sourcemaps = require('gulp-sourcemaps'),
     shell = require('gulp-shell'),
     gutil = require('gulp-util'),
+    eslint = require('gulp-eslint'),
     chalk = require('chalk'),
     del = require('del'),
     path = require('path');
@@ -20,6 +21,14 @@ var appJS = 'app/assets/js/app.js',
 gulp.task('default', ['clean-dev', 'js-dev', 'css-dev', 'templates-dev', 'server-dev']);
 
 gulp.task('dist', ['clean-dist', 'js-dist', 'css-dist', 'templates-dist', 'server-dist']);
+
+gulp.task('lint', function() {
+  return lintJS();
+});
+
+gulp.task('lint-dist', function() {
+  return lintJS().pipe(eslint.failOnError());
+});
 
 gulp.task('clean', function(cb) {
   del(['build/**', '!build'], cb);
@@ -68,11 +77,13 @@ gulp.task('js-dev', function() {
   };
 
   buildJS(jsOptions);
+  lintJS();
 
   watchify(b).on('update', function () {
     gutil.log('Building ' + chalk.cyan('JS') + '...');
     buildJS(jsOptions).on('end', function() {
       gutil.log('Built ' + chalk.cyan('JS'));
+      lintJS();
     });
   });
 });
@@ -110,7 +121,7 @@ gulp.task('templates-dist', function() {
   return copyTemplates(dest);
 });
 
-gulp.task('js-dist', function() {
+gulp.task('js-dist', ['lint-dist'], function() {
   var dest = 'build/dist/assets/js';
 
   del.sync([dest]);
@@ -156,7 +167,6 @@ function copyTemplates(dest) {
 
 function browserifyBundler(options) {
   var jsExtensions = ['.js', '.jsx', '.es6', '.coffee', '.json'];
-
   options = merge({
     extensions: jsExtensions,
     paths: path.dirname(appJS)
@@ -166,6 +176,12 @@ function browserifyBundler(options) {
   bundler.transform(coffeeify);
   bundler.transform(babelify.configure({extensions: jsExtensions}));
   return bundler;
+}
+
+function lintJS() {
+  return gulp.src(['app/assets/js/**/*.+(js|jsx|es6)'])
+    .pipe(eslint())
+    .pipe(eslint.format());
 }
 
 function buildJS(options) {
